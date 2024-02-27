@@ -122,9 +122,9 @@ function getUsers(req, res) {
   
   function login(req, res) {
     const { userName, password } = req.body;
-    const checkUserNameQuery = `SELECT * FROM ORP_users WHERE UserName = $1`;
+    const checkUserNameQuery = `SELECT * FROM app.users WHERE personalemail = $1`;
   
-    pool.query(checkUserNameQuery, [userName], (checkUserNameError, checkUserNameResult) => {
+    db.query(checkUserNameQuery, [userName], (checkUserNameError, checkUserNameResult) => {
       if (checkUserNameError) {
         return res.status(401).json({ message: 'Error While Checking UserName' });
       }
