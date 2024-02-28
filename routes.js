@@ -24,5 +24,12 @@ router.get('/user', authentication.user);
 router.put('/editUser/:userId', authentication.editUser);
 router.delete('/deleteUser/:userId', authentication.deleteUser);
 
+//forget pass
+router.post('/reset-password', authentication.resetPassword);
+
+// dash
+
+router.put('/updatePassword/:UserId', authentication.updatePassword);
+
 
 module.exports = router;

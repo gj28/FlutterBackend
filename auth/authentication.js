@@ -7,11 +7,12 @@ const fs = require('fs');
 const path = require('path');
 const ejs = require('ejs');
 
+
+
 function registerUser(req, res) {
   const {
     fullName,
     contactNo,
-    userType,
     personalEmail,
     password
   } = req.body;
@@ -32,7 +33,7 @@ function registerUser(req, res) {
         return res.status(401).json({ message: 'Error During Hashing Password' });
       }
       const verificationToken = jwtUtils.generateToken({ personalEmail: personalEmail });
-      db.query(insertUserQuery, [userId, fullName, contactNo, userType, personalEmail, hashedPassword, verificationToken, '0'], (insertUserError, insertUserResult) => {
+      db.query(insertUserQuery, [userId, fullName, contactNo, 'student', personalEmail, hashedPassword, verificationToken, '0'], (insertUserError, insertUserResult) => {
         if (insertUserError) {
           console.error('Error during user insertion:', insertUserError);
           return res.status(500).json({ message: 'Internal server error' });
@@ -51,8 +52,6 @@ function registerUser(req, res) {
     });
   });
 }
-
-
 
   
 function sendTokenEmail(email, token) {
@@ -103,9 +102,9 @@ function sendTokenEmail(email, token) {
 
 function getUserById(req, res) {
     const userId = req.params.userId;
-    const getUserByUserIdQuery = `SELECT * FROM ORP_users WHERE UserId = $1`;
+    const getUserByUserIdQuery = `SELECT * FROM app.users WHERE userid = $1`;
   
-    pool.query(getUserByUserIdQuery, [userId], (fetchUserIdError, fetchUserIdResult) => {
+    db.query(getUserByUserIdQuery, [userId], (fetchUserIdError, fetchUserIdResult) => {
       if (fetchUserIdError) {
         return res.status(401).json({ message: 'Error while fetching user' });
       }
@@ -177,6 +176,11 @@ function getUsers(req, res) {
 
 
   function user(req, res) {
+    // Check if Authorization header exists
+    if (!req.headers.authorization) {
+      return res.status(401).json({ message: 'Authorization header missing' });
+    }
+  
     const token = req.headers.authorization.split(' ')[1];
   
     try {
@@ -205,26 +209,18 @@ function getUsers(req, res) {
   function editUser(req, res) {
     const userId = req.params.userId;
     const {
-      userName,
-      contact,
-      firstName,
-      lastName,
-      companyEmail,
-      userType,
-      location
+      fullName,
+      contactNo,
+      personalEmail,
     } = req.body;
   
-    const editUserQuery = `UPDATE ORP_users SET UserName = $1, FirstName = $2, LastName = $3, CompanyEmail = $4, Contact = $5, UserType = $6, Location = $7 WHERE UserId = $8`;
+    const editUserQuery = `UPDATE app.users SET fullName = $1, contactNo = $2, personalEmail = $3 WHERE userid = $4`;
     
-    pool.query(editUserQuery, [
-      userName,
-      firstName,
-      lastName,
-      companyEmail,
-      contact,
-      userType,
-      location,
-      userId,
+    db.query(editUserQuery, [
+      fullName,
+      contactNo,
+      personalEmail,
+      userId
     ], (updateError, updateResult) => {
       if (updateError) {
         return res.status(401).json({ message: 'Error While Updating User' });
@@ -236,9 +232,9 @@ function getUsers(req, res) {
 
   function deleteUser(req, res) {
     const userId = req.params.userId;
-    const deleteUserQuery = `DELETE FROM ORP_users WHERE UserId = $1`;
+    const deleteUserQuery = `DELETE FROM app.users WHERE userid = $1`;
   
-    pool.query(deleteUserQuery, [userId], (deleteError, deleteResult) => {
+    db.query(deleteUserQuery, [userId], (deleteError, deleteResult) => {
       if (deleteError) {
         return res.status(401).json({ message: 'Error While Deleting User' });
       }
@@ -263,6 +259,94 @@ function generateUserID() {
 
   return userId;
 }
+
+function resetPassword(req, res) {
+  const { token, password } = req.body;
+
+  // Check if the email and reset token match in the database
+  const query = 'SELECT * FROM app.reset_tokens WHERE token = $1';
+  db.query(query, [token], (error, result) => {
+    if (error) {
+      console.error('Error during reset password query:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+
+    if (result.rowCount === 0) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    const tokenData = result.rows[0];
+    const userId = tokenData.userid;
+
+    // Hash the new password
+    bcrypt.hash(password, 10, (error, hashedPassword) => {
+      if (error) {
+        console.error('Error during password hashing:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+
+      // Update the password in the database
+      const updateQuery = 'UPDATE app.users SET password = $1 WHERE userid = $2';
+      db.query(updateQuery, [hashedPassword, userId], (error, updateResult) => {
+        if (error) {
+          console.error('Error updating password:', error);
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+
+        // Delete the reset token from the reset_tokens table
+        const deleteQuery = 'DELETE FROM app.reset_tokens WHERE token = $1';
+        db.query(deleteQuery, [token], (error, deleteResult) => {
+          if (error) {
+            console.error('Error deleting reset token:', error);
+          }
+
+          res.json({ message: 'Password reset successful' });
+        });
+      });
+    });
+  });
+}
+
+
+function updatePassword(req, res) {
+  const UserId = req.params.UserId;
+  const { Password } = req.body;
+
+  // Check if the user exists in the database
+  const userCheckQuery = 'SELECT * FROM app.users WHERE userid = $1';
+  db.query(userCheckQuery, [UserId], (error, useridCheckResult) => {
+    try {
+      if (error) {
+        console.error('Error during UserId check:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+
+      if (useridCheckResult.length === 0) {
+        console.log('User not found!');
+        return res.status(400).json({ message: 'User not found!' });
+      }
+
+      // Hash the new password
+      const hashedPassword = bcrypt.hashSync(Password, 10);
+
+      // Update the user's password in the database
+      const updatePasswordQuery = 'UPDATE app.users SET password = $1 WHERE userid = $2';
+      db.query(updatePasswordQuery, [hashedPassword, UserId], (error, result) => {
+        if (error) {
+          console.error('Error updating password:', error);
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+
+        res.json({ message: 'Password updated successfully' });
+        console.log(result);
+      });
+    } catch (error) {
+      console.error('Error updating password:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+}
+
 module.exports = { 
   registerUser,
   getUserById,
@@ -271,4 +355,6 @@ module.exports = {
   user,
   editUser,
   deleteUser,
+  resetPassword,
+  updatePassword
 }
