@@ -40,7 +40,9 @@ function registerUser(req, res) {
         try {
           sendTokenEmail(personalEmail, verificationToken);
           console.log('User registered successfully');
-          return res.status(200).json({ message: 'Registration successful. Check your email for the verification token.' });
+          return res.status(200).json({ 
+            status: 200,
+            message: 'Registration successful. Check your email for the verification token.' });
         } catch (sendTokenError) {
           console.error('Error sending verification token:', sendTokenError);
           return res.status(500).json({ message: 'Internal server error' });
@@ -49,6 +51,8 @@ function registerUser(req, res) {
     });
   });
 }
+
+
 
   
 function sendTokenEmail(email, token) {
@@ -110,9 +114,9 @@ function getUserById(req, res) {
   }
   
 function getUsers(req, res) {
-    const getUserByUserQuery = `SELECT * FROM ORP_users`;
+    const getUserByUserQuery = `SELECT * FROM app.users`;
   
-    pool.query(getUserByUserQuery, (fetchUsersError, fetchUsersResult) => {
+    db.query(getUserByUserQuery, (fetchUsersError, fetchUsersResult) => {
       if (fetchUsersError) {
         return res.status(401).json({ message: 'Error while fetching users' });
       }
@@ -120,35 +124,6 @@ function getUsers(req, res) {
     });
   }
   
-  // function login(req, res) {
-  //   const { userName, password } = req.body;
-  //   const checkUserNameQuery = `SELECT * FROM app.users WHERE personalemail = $1`;
-  
-  //   db.query(checkUserNameQuery, [userName], (checkUserNameError, checkUserNameResult) => {
-  //     if (checkUserNameError) {
-  //       return res.status(401).json({ message: 'Error While Checking UserName' });
-  //     }
-  //     if (checkUserNameResult.rows.length === 0) {
-  //       return res.status(401).json({ message: 'Username Not Found' });
-  //     }
-  
-  //     const user = checkUserNameResult.rows[0];
-  //     bcrypt.compare(password, user.password, (passwordCheckError, passwordCheckResult) => {
-  //       if (passwordCheckError) {
-  //         console.log(passwordCheckError);
-  //         return res.status(401).json({ message: 'Error During Password Comparison' });
-  //       }
-  //       if (!passwordCheckResult) {
-  //         return res.status(401).json({ message: 'Invalid Credentials' });
-  //       }
-  //       const jwToken = jwt.sign({ userName: user.UserName }, process.env.JWT_SECRET_KEY);
-  //       return res.status(200).json({
-  //         message: 'Login Successful',
-  //         token: jwToken,
-  //       });
-  //     });
-  //   });
-  // }
   
   function login(req, res) {
     const { Username, Password } = req.body;
