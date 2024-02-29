@@ -23,30 +23,52 @@ function registerUser(req, res) {
 
   db.query(fetchUserName, [personalEmail], (fetchUsernameError, fetchUsernameResult) => {
     if (fetchUsernameError) {
-      return res.status(401).json({ message: 'Error Checking User Email' });
+      return res.status(401).json({ 
+        status: 401,
+        message: 'Error Checking User Email',
+        data: {}
+      });
     }
     if (fetchUsernameResult.rows.length > 0) {
-      return res.status(401).json({ message: 'User Already Exists' });
+      return res.status(401).json({ 
+        status: 401,
+        message: 'User Already Exists',
+        data: {}
+         });
     }
     bcrypt.hash(password, 10, (error, hashedPassword) => {
       if (error) {
-        return res.status(401).json({ message: 'Error During Hashing Password' });
+        return res.status(401).json({ 
+          status: 401,
+          message: 'Error During Hashing Password',
+          data: {}
+           });
       }
       const verificationToken = jwtUtils.generateToken({ personalEmail: personalEmail });
       db.query(insertUserQuery, [userId, fullName, contactNo, 'student', personalEmail, hashedPassword, verificationToken, '0'], (insertUserError, insertUserResult) => {
         if (insertUserError) {
           console.error('Error during user insertion:', insertUserError);
-          return res.status(500).json({ message: 'Internal server error' });
+          return res.status(500).json({ 
+            status: 500,
+            message: 'Internal server error',
+            data: {}
+             });
         }
         try {
           sendTokenEmail(personalEmail, verificationToken);
           console.log('User registered successfully');
           return res.status(200).json({ 
             status: 200,
-            message: 'Registration successful. Check your email for the verification token.' });
-        } catch (sendTokenError) {
+            message: 'Registration successful. Check your email for the verification token.',
+            data: {}
+          });
+          } catch (sendTokenError) {
           console.error('Error sending verification token:', sendTokenError);
-          return res.status(500).json({ message: 'Internal server error' });
+          return res.status(500).json({ 
+            status: 200,
+            message: 'Internal server error',
+            data: {}
+           });
         }
       });
     });
