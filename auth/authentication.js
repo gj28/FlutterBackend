@@ -198,7 +198,11 @@ function getUsers(req, res) {
             const token = jwtUtils.generateToken({ Username: user.username });
   
             // Log the success if no error occurred
-            res.json({ token });
+            res.json({ 
+              status: 401,
+              message: 'User does not exist!',
+              data: token
+               });
           } catch (error) {
             console.error(error);
             res.status(500).json({ 
