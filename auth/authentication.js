@@ -199,8 +199,8 @@ function getUsers(req, res) {
   
             // Log the success if no error occurred
             res.json({ 
-              status: 401,
-              message: 'User does not exist!',
+              status: 200,
+              message: 'Login Successful!',
               data: token
                });
           } catch (error) {
