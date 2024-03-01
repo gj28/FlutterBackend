@@ -205,6 +205,8 @@ function getUsers(req, res) {
                 userid: user.userid,
                 fullname: user.fullname,
                 contactno: user.contactno,
+                usertype: user.usertype,
+                personalemail: user.personalemail,
               
               }  
                });
