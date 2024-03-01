@@ -201,7 +201,12 @@ function getUsers(req, res) {
             res.json({ 
               status: 200,
               message: 'Login Successful!',
-              data: token
+              data: {token:token,
+                userid: user.userid,
+                fullname: user.fullname,
+                contactno: user.contactno,
+              
+              }  
                });
           } catch (error) {
             console.error(error);
