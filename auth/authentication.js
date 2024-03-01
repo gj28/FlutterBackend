@@ -162,12 +162,20 @@ function getUsers(req, res) {
         const user = result.rows[0];
         if (!user) {
           console.error('User does not exist!');
-          return res.status(401).json({ message: 'User does not exist!' });
+          return res.status(401).json({ 
+            status: 401,
+            message: 'User does not exist!',
+            data: {}
+           });
         }
   
         if (user.verified === 0) {
           console.error('User is not verified. Please verify your account.');
-          return res.status(401).json({ message: 'User is not verified. Please verify your account.' });
+          return res.status(401).json({ 
+            status: 401,
+            message: 'User is not verified. Please verify your account.',
+            data: {}
+             });
         }
   
         // Compare the provided password with the hashed password in the database
@@ -179,7 +187,11 @@ function getUsers(req, res) {
   
             if (!isPasswordValid) {
               console.error('Invalid credentials');
-              return res.status(401).json({ message: 'Invalid credentials' });
+              return res.status(401).json({ 
+                status: 401,
+                message: 'Invalid credentials',
+                data: {}
+                 });
             }
   
             // Generate a JWT token
@@ -189,12 +201,20 @@ function getUsers(req, res) {
             res.json({ token });
           } catch (error) {
             console.error(error);
-            res.status(500).json({ message: 'Internal server error' });
+            res.status(500).json({ 
+              status: 500,
+              message: 'Internal server error',
+              data: {}
+               });
           }
         });
       } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ 
+          status: 500,
+          message: 'Internal server error',
+          data: {}
+           });
       }
     });
   }
