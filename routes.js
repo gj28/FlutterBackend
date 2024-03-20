@@ -25,6 +25,7 @@ router.put('/editUser/:userId', authentication.editUser);
 router.delete('/deleteUser/:userId', authentication.deleteUser);
 
 //forget pass
+router.post('/forgot', authentication.forgotPassword);
 router.post('/reset-password', authentication.resetPassword);
 
 // dash

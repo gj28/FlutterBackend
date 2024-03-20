@@ -403,6 +403,92 @@ function updatePassword(req, res) {
   });
 }
 
+function forgotPassword(req, res) {
+  const { personalEmail } = req.body;
+
+  const query = 'SELECT * FROM app.users WHERE personalemail = $1';
+  db.query(query, [personalEmail], (error, result) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ 
+        status: 500,
+        message: 'Internal server error',
+        data: {}
+     });
+    }
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+      message: 'User not found',
+      status: 404,
+      data: {} 
+    });
+    }
+
+    const resetToken = jwtUtils.generateToken({ personalEmail });
+
+    const userId = result.rows[0].userid; 
+    const insertQuery = 'INSERT INTO app.reset_tokens (userid, token) VALUES ($1, $2)';
+    db.query(insertQuery, [userId, resetToken], (insertError) => {
+      if (insertError) {
+        console.error(insertError);
+        return res.status(500).json({ 
+          message: 'Error saving reset token',
+          status: 500,
+          data: {} 
+       });
+      }
+      sendResetTokenEmail(personalEmail, resetToken);
+
+      res.json({ message: 'Reset token sent to your email' });
+    });
+  });
+}
+
+
+
+function sendResetTokenEmail(personalEmail, resetToken) {
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: 'kpohekar19@gmail.com',
+      pass: 'woptjevenzhqmrpp',
+    },
+  });
+
+  // Read the email template file
+  const templatePath = path.join(__dirname, '../mail-body/email-template-forgot-password.ejs');
+  fs.readFile(templatePath, 'utf8', (err, templateData) => {
+    if (err) {
+      console.error('Error reading email template:', err);
+      return;
+    }
+
+    // Compile the email template with EJS
+    const compiledTemplate = ejs.compile(templateData);
+
+    // Render the template with the reset token
+    const html = compiledTemplate({ resetToken });
+
+    const mailOptions = {
+      from: 'kpohekar19@gmail.com',
+      to: personalEmail,
+      subject: 'Reset Password Link',
+      html: html,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+      } else {
+        console.log('Email sent:', info.response);
+      }
+    });
+  });
+}
 module.exports = { 
   registerUser,
   getUserById,
@@ -412,5 +498,8 @@ module.exports = {
   editUser,
   deleteUser,
   resetPassword,
-  updatePassword
+  updatePassword,
+  forgotPassword,
+  sendResetTokenEmail
+  
 }
