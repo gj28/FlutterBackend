@@ -440,7 +440,11 @@ function forgotPassword(req, res) {
       }
       sendResetTokenEmail(personalEmail, resetToken);
 
-      res.json({ message: 'Reset token sent to your email' });
+      res.json({ 
+        message: 'Reset token sent to your email',
+        status: 200,
+        data: {} 
+       });
     });
   });
 }
